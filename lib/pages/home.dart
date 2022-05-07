@@ -6,9 +6,9 @@ import 'package:http/http.dart' as http;
 class CrustDetails {
   int id, defaultCrust;
   String name;
-  Map crustSizes;
+  List crustSizes, crustCosts;
 
-  CrustDetails({required this.id, required this.defaultCrust, required this.name, required this.crustSizes});
+  CrustDetails({required this.id, required this.defaultCrust, required this.name, required this.crustSizes, required this.crustCosts});
 }
 class PizzaDetails {
   String name, description;
@@ -48,27 +48,36 @@ class _HomePageState extends State<HomePage> {
       int defaultCrust;
       String crustName;
       int id, defaultCrustId;
-      Map crustSizes = {};
+
       CrustDetails crustItem;
       PizzaDetails pizzaItem;
       List<CrustDetails> crustItemList = [];
+      List<String> crustSizes = [];
+      List<int> crustCosts = [];
 
         name = jsonData['name'];
         isVeg = jsonData['isVeg'];
         description = jsonData['description'];
         defaultCrust = jsonData['defaultCrust'];
         crustItemList.clear();
-        print(name);
         for(var crust in jsonData['crusts']) {
           id = crust['id'];
           crustName = crust['name'];
+          crustSizes.clear();
+          crustCosts.clear();
           for(var sizes in crust['sizes']) {
-            crustSizes[sizes['name']] = sizes['price'];
-            print(sizes['name']);
+            //crustSizes[sizes['name']] = sizes['price'];
+            crustSizes.add(sizes['name']);
+            crustCosts.add(sizes['price']);
+
           }
-          crustItem = CrustDetails(id: id, defaultCrust: defaultCrust, name: name, crustSizes: crustSizes);
+          crustItem = CrustDetails(id: id, defaultCrust: defaultCrust, name: crustName, crustSizes: crustSizes.toList(), crustCosts: crustCosts.toList());
           crustItemList.add(crustItem);
+          //show crust type sizes
+          debugPrint(crustItem.crustSizes.toString());
         }
+        //show 1st crust type sizes
+        debugPrint(crustItemList[0].crustSizes.toString());
         pizzaItem = PizzaDetails(name: name, description: description, isVeg: isVeg, defaultCrust: defaultCrust, crustItems: crustItemList);
         pizzaList.add(pizzaItem);
     }
@@ -95,10 +104,14 @@ class _HomePageState extends State<HomePage> {
           centerTitle: true,
         ),
       body: Center(
-        child: _loading? CircularProgressIndicator() : ListView.builder(
+        child: _loading? const CircularProgressIndicator() : ListView.builder(
           itemCount: pizzaList.length,
             itemBuilder: (context, index) {
-              return Container(
+              return InkWell(
+                onTap: () {
+                  debugPrint("Pressed on Pizza");
+
+                },
                 child: Card(
                   elevation: 5,
                   child: Column(
@@ -106,7 +119,53 @@ class _HomePageState extends State<HomePage> {
                       Text(pizzaList[index].name),
                       Text(pizzaList[index].description),
                       Text(pizzaList[index].isVeg.toString()),
-                      Text(pizzaList[index].crustItems.toString()),
+                      ElevatedButton(
+                          onPressed: () async {
+                            debugPrint("Pressed Add to Cart");
+                            await showModalBottomSheet(
+                              context: context,
+                              builder: (context) {
+                                return StatefulBuilder(
+                                    builder: (context, setState) {
+                                      return Container(
+                                        height: 600,
+                                        decoration: const BoxDecoration(
+                                          borderRadius: BorderRadius.only(
+                                              topLeft: Radius.circular(10),
+                                              topRight: Radius.circular(10)),
+                                        ),
+                                        child: ListView.builder(
+                                            itemCount: pizzaList[index].crustItems.length,
+                                            itemBuilder: (context, i) {
+                                              return Column(
+                                                children: [
+                                                  Text(pizzaList[index].crustItems[i].name),
+                                                  SizedBox(
+                                                    height: 200,
+                                                    child: ListView.builder(
+                                                        itemCount: pizzaList[index].crustItems[i].crustSizes.length,
+                                                        itemBuilder: (context, j) {
+                                                          return ListTile(
+                                                            title: Text(pizzaList[index].crustItems[i].crustSizes[j]),
+                                                            trailing: Text(pizzaList[index].crustItems[i].crustCosts[j].toString()),
+                                                          );
+                                                        }),
+                                                  ),
+                                                ],
+                                              );
+                                              return ListTile(
+                                                title: Text(pizzaList[index].crustItems[i].name),
+                                              );
+                                            }
+                                        ),
+                                      );
+                                    });
+                              }
+                                );
+
+                          },
+                          child: const Text("Add to cart"),
+                      ),
                     ],
                   ),
                 ),
@@ -116,4 +175,36 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+  /*
+  void showCustomDialog(PizzaDetails pizzaItem) async {
+    debugPrint("In showCustomDialog");
+    await AlertDialog(
+      title: Text("Customise your pizza"),
+      content: Container(
+        height: 600,
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(10),
+              topRight: Radius.circular(10)),
+        ),
+        child: ListView.builder(
+            itemCount: pizzaItem.crustItems.length,
+            itemBuilder: (context, index) {
+              return ListTile(
+                title: Text(pizzaItem.crustItems.length.toString()),
+              );
+            }
+            ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          child: const Text('Approve'),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+      ],
+    );
+  }
+  */
 }
