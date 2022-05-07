@@ -177,6 +177,7 @@ class _HomePageState extends State<HomePage> {
                   ElevatedButton(
                       onPressed: () {
                         debugPrint("Pressed View Cart");
+                        viewCartDialog();
                       },
                       child: const Text("View Cart"),
                   ),
@@ -283,46 +284,6 @@ class _HomePageState extends State<HomePage> {
                       )
                     ],
                   ),
-                  /*
-                  child: ListView.builder(
-                      itemCount: pizzaList[index].crustItems.length,
-                      itemBuilder: (context, i) {
-                        return Column(
-                          children: [
-                            Text(pizzaList[index].crustItems[i].name),
-                            SizedBox(
-                              height: 200,
-                              child: ListView.builder(
-                                  itemCount: pizzaList[index].crustItems[i].crustSizes.length,
-                                  itemBuilder: (context, j) {
-                                    return ListTile(
-                                      title: Column(
-                                        children: [
-                                          Text(pizzaList[index].crustItems[i].crustSizes[j]),
-                                          Text(pizzaList[index].crustItems[i].crustCosts[j].toString()),
-                                        ],
-                                      ),
-                                      //trailing: Text(pizzaList[index].crustItems[i].crustCosts[j].toString()),
-                                      trailing: Radio(
-                                        value: j,
-                                        groupValue: 2,
-                                        onChanged: (value) {
-                                          debugPrint("Changed selection");
-                                          setState((){
-                                          });
-                                        },
-                                      ),
-                                    );
-                                  }),
-                            ),
-                          ],
-                        );
-                        return ListTile(
-                          title: Text(pizzaList[index].crustItems[i].name),
-                        );
-                      }
-                  ),
-                  */
                 );
               });
         }
@@ -331,6 +292,10 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> viewCartDialog() async {
     debugPrint("In viewCartDialog()");
+    double price = 0.0;
+    for(var item in cartDetails) {
+      price += item[3] * item[4];
+    }
     await showModalBottomSheet(
         context: context,
         builder: (context) {
@@ -342,6 +307,60 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(10),
                         topRight: Radius.circular(10)),
+                  ),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: 300,
+                        child: ListView.builder(
+                          itemCount: cartDetails.length,
+                            itemBuilder: (context, index) {
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        Text(cartDetails[index][0]),
+                                        Text(cartDetails[index][1]),
+                                        Text(cartDetails[index][2]),
+                                      ],
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  IconButton(onPressed: () {
+                                    debugPrint("Removed a Item");
+                                    if(cartDetails[index][4] == 1) {
+                                      cartDetails.removeAt(index);
+                                    }
+                                    else {
+                                      cartDetails[index][4]--;
+                                    }
+                                    setState (() {
+                                      price=0;
+                                      for(var item in cartDetails) {
+                                        price += item[3] * item[4];
+                                      }
+                                    });
+                                  }, icon: const Icon(Icons.remove)),
+                                  Text(cartDetails[index][4].toString()),
+                                  IconButton(onPressed: () {
+                                    debugPrint("Added an Item");
+                                    setState(() {
+                                      cartDetails[index][4]++;
+                                      price=0;
+                                      for(var item in cartDetails) {
+                                        price += item[3] * item[4];
+                                      }
+                                    });
+                                  }, icon: const Icon(Icons.add),),
+                                  Text((cartDetails[index][3] * cartDetails[index][4]).toString()),
+                                ],
+                              );
+                            }),
+                      ),
+                      Text("Total Price: " + price.toString()),
+                    ],
                   ),
                 );
               }
