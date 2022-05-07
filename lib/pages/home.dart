@@ -1,15 +1,19 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+//class to store Crust details (type, size and cost)
 class CrustDetails {
-  int id, defaultCrust;
+  int id, defaultSize;
   String name;
   List crustSizes, crustCosts;
 
-  CrustDetails({required this.id, required this.defaultCrust, required this.name, required this.crustSizes, required this.crustCosts});
+  CrustDetails({required this.id, required this.defaultSize, required this.name, required this.crustSizes, required this.crustCosts});
 }
+
+//class to store Pizza details
 class PizzaDetails {
   String name, description;
   bool isVeg;
@@ -26,7 +30,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
 
+  //List of the custom PizzaDetails objects
   List<PizzaDetails> pizzaList = [];
+
+  List cartDetails = [];
 
   //Status Code for the http request
   late int statusCode;
@@ -34,6 +41,10 @@ class _HomePageState extends State<HomePage> {
 
   bool _loading = true;
 
+  int val=-1;
+  bool _value=false;
+
+  //Function to get Pizza details for http GET request
   Future<void> getDetails() async {
     debugPrint("In getDetails");
     String url = "https://625bbd9d50128c570206e502.mockapi.io/api/v1/pizza/1";
@@ -47,7 +58,7 @@ class _HomePageState extends State<HomePage> {
       bool isVeg;
       int defaultCrust;
       String crustName;
-      int id, defaultCrustId;
+      int id, defaultSize;
 
       CrustDetails crustItem;
       PizzaDetails pizzaItem;
@@ -63,6 +74,7 @@ class _HomePageState extends State<HomePage> {
         for(var crust in jsonData['crusts']) {
           id = crust['id'];
           crustName = crust['name'];
+          defaultSize = crust['defaultSize'];
           crustSizes.clear();
           crustCosts.clear();
           for(var sizes in crust['sizes']) {
@@ -71,7 +83,7 @@ class _HomePageState extends State<HomePage> {
             crustCosts.add(sizes['price']);
 
           }
-          crustItem = CrustDetails(id: id, defaultCrust: defaultCrust, name: crustName, crustSizes: crustSizes.toList(), crustCosts: crustCosts.toList());
+          crustItem = CrustDetails(id: id, defaultSize: defaultSize, name: crustName, crustSizes: crustSizes.toList(), crustCosts: crustCosts.toList());
           crustItemList.add(crustItem);
           //show crust type sizes
           debugPrint(crustItem.crustSizes.toString());
@@ -89,6 +101,12 @@ class _HomePageState extends State<HomePage> {
     debugPrint(statusCode.toString());
   }
 
+  int getDefaultPrice(int index) {
+    int defaultCrust = pizzaList[index].defaultCrust;
+    int defaultSize = pizzaList[index].crustItems[defaultCrust-1].defaultSize;
+    return pizzaList[index].crustItems[defaultCrust-1].crustCosts[defaultSize-1];
+  }
+
   @override
   void initState() {
     // TODO: implement initState
@@ -104,107 +122,232 @@ class _HomePageState extends State<HomePage> {
           centerTitle: true,
         ),
       body: Center(
-        child: _loading? const CircularProgressIndicator() : ListView.builder(
-          itemCount: pizzaList.length,
-            itemBuilder: (context, index) {
-              return InkWell(
-                onTap: () {
-                  debugPrint("Pressed on Pizza");
+        child: _loading? const CircularProgressIndicator() : Column(
+          children: [
+            Expanded(
+              child: Container(
+                child: ListView.builder(
+                  itemCount: pizzaList.length,
+                    itemBuilder: (context, index) {
+                      return InkWell(
+                        onTap: () {
+                          debugPrint("Pressed on Pizza");
 
-                },
-                child: Card(
-                  elevation: 5,
-                  child: Column(
-                    children: [
-                      Text(pizzaList[index].name),
-                      Text(pizzaList[index].description),
-                      Text(pizzaList[index].isVeg.toString()),
-                      ElevatedButton(
-                          onPressed: () async {
-                            debugPrint("Pressed Add to Cart");
-                            await showModalBottomSheet(
-                              context: context,
-                              builder: (context) {
-                                return StatefulBuilder(
-                                    builder: (context, setState) {
-                                      return Container(
-                                        height: 600,
-                                        decoration: const BoxDecoration(
-                                          borderRadius: BorderRadius.only(
-                                              topLeft: Radius.circular(10),
-                                              topRight: Radius.circular(10)),
-                                        ),
-                                        child: ListView.builder(
-                                            itemCount: pizzaList[index].crustItems.length,
-                                            itemBuilder: (context, i) {
-                                              return Column(
-                                                children: [
-                                                  Text(pizzaList[index].crustItems[i].name),
-                                                  SizedBox(
-                                                    height: 200,
-                                                    child: ListView.builder(
-                                                        itemCount: pizzaList[index].crustItems[i].crustSizes.length,
-                                                        itemBuilder: (context, j) {
-                                                          return ListTile(
-                                                            title: Text(pizzaList[index].crustItems[i].crustSizes[j]),
-                                                            trailing: Text(pizzaList[index].crustItems[i].crustCosts[j].toString()),
-                                                          );
-                                                        }),
-                                                  ),
-                                                ],
-                                              );
-                                              return ListTile(
-                                                title: Text(pizzaList[index].crustItems[i].name),
-                                              );
-                                            }
-                                        ),
-                                      );
-                                    });
-                              }
-                                );
-
-                          },
-                          child: const Text("Add to cart"),
-                      ),
-                    ],
-                  ),
+                        },
+                        child: Card(
+                          elevation: 5,
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(pizzaList[index].name),
+                                  Text(pizzaList[index].isVeg? "Veg" : "Non-Veg"),
+                                ],
+                              ),
+                              Text(pizzaList[index].description),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text("₹" + getDefaultPrice(index).toString()),
+                                  ElevatedButton(
+                                      onPressed: () async {
+                                        debugPrint("Pressed Customise");
+                                        showCustomDialog(index);
+                                      },
+                                      child: const Text("Customise"),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
                 ),
-              );
-            }
+              ),
+            ),
+            SizedBox(
+              height: 100,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("1 Item"),
+                  Text("500"),
+                  ElevatedButton(
+                      onPressed: () {
+                        debugPrint("Pressed View Cart");
+                      },
+                      child: const Text("View Cart"),
+                  ),
+                ],
+              ),
+            ),
+          ],
         )
       ),
     );
   }
-  /*
-  void showCustomDialog(PizzaDetails pizzaItem) async {
+
+  void showCustomDialog(int index) async {
     debugPrint("In showCustomDialog");
-    await AlertDialog(
-      title: Text("Customise your pizza"),
-      content: Container(
-        height: 600,
-        decoration: const BoxDecoration(
-          borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(10),
-              topRight: Radius.circular(10)),
-        ),
-        child: ListView.builder(
-            itemCount: pizzaItem.crustItems.length,
-            itemBuilder: (context, index) {
-              return ListTile(
-                title: Text(pizzaItem.crustItems.length.toString()),
-              );
-            }
-            ),
-      ),
-      actions: <Widget>[
-        TextButton(
-          child: const Text('Approve'),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-      ],
+    int defaultCrust = pizzaList[index].defaultCrust-1;
+    String? selectedCrust = pizzaList[index].crustItems[defaultCrust].name;
+    int selectedCrustIndex = defaultCrust;
+    int selectedCrustSize = pizzaList[index].crustItems[defaultCrust].defaultSize-1;
+    await showModalBottomSheet(
+        context: context,
+        builder: (context) {
+          return StatefulBuilder(
+              builder: (context, setState) {
+                return Container(
+                  height: 600,
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(10),
+                        topRight: Radius.circular(10)),
+                  ),
+                  child: Column(
+                    children: [
+                      DropdownButton(
+                        value: selectedCrust,
+                        items: pizzaList[index].crustItems
+                            .map<DropdownMenuItem<String>>((CrustDetails crust) {
+                          return DropdownMenuItem<String>(
+                            value: crust.name,
+                            child: Text(crust.name),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedCrust = newValue;
+                            for(var crust in pizzaList[index].crustItems) {
+                              if (crust.name == selectedCrust) {
+                                selectedCrustIndex = crust.id - 1;
+                                selectedCrustSize = crust.defaultSize - 1;
+                              }
+                            }
+                          });
+                        },
+                      ),
+                      SizedBox(
+                        height: 300,
+                        child: ListView.builder(
+                          itemCount: pizzaList[index].crustItems[selectedCrustIndex].crustSizes.length,
+                            itemBuilder: (context, i) {
+                              return ListTile(
+                                title: Text(pizzaList[index].crustItems[selectedCrustIndex].crustSizes[i]),
+                                /*Column(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(pizzaList[index].crustItems[selectedCrustIndex].crustSizes[i]),
+                                    Text(pizzaList[index].crustItems[selectedCrustIndex].crustCosts[i].toString()),
+                                  ],
+                                ),
+
+                                 */
+                                trailing: Radio(
+                                  value: i,
+                                  groupValue: selectedCrustSize,
+                                  onChanged: (value) {
+                                    debugPrint("Changed selection");
+                                    setState((){
+                                      selectedCrustSize = value as int;
+                                    });
+                                  },
+                                ),
+                              );
+                            }
+                        ),
+                      ),
+                      ElevatedButton(
+                          onPressed: () {
+                            debugPrint("Pressed Add to Cart");
+                            bool checkExists = false;
+                            for(var item in cartDetails) {
+                              if(item[0] == pizzaList[index].name && item[1] == pizzaList[index].crustItems[selectedCrustIndex].name
+                                  && item[2] == pizzaList[index].crustItems[selectedCrustIndex].crustSizes[selectedCrustSize]) {
+                                item[4]++;
+                                checkExists = true;
+                              }
+                            }
+                            if(!checkExists) {
+                              cartDetails.add([pizzaList[index].name,
+                                pizzaList[index].crustItems[selectedCrustIndex].name,
+                                pizzaList[index].crustItems[selectedCrustIndex].crustSizes[selectedCrustSize],
+                                pizzaList[index].crustItems[selectedCrustIndex].crustCosts[selectedCrustSize],
+                                1]);
+                            }
+                          },
+                          child: const Text("Add to Cart"),
+                      )
+                    ],
+                  ),
+                  /*
+                  child: ListView.builder(
+                      itemCount: pizzaList[index].crustItems.length,
+                      itemBuilder: (context, i) {
+                        return Column(
+                          children: [
+                            Text(pizzaList[index].crustItems[i].name),
+                            SizedBox(
+                              height: 200,
+                              child: ListView.builder(
+                                  itemCount: pizzaList[index].crustItems[i].crustSizes.length,
+                                  itemBuilder: (context, j) {
+                                    return ListTile(
+                                      title: Column(
+                                        children: [
+                                          Text(pizzaList[index].crustItems[i].crustSizes[j]),
+                                          Text(pizzaList[index].crustItems[i].crustCosts[j].toString()),
+                                        ],
+                                      ),
+                                      //trailing: Text(pizzaList[index].crustItems[i].crustCosts[j].toString()),
+                                      trailing: Radio(
+                                        value: j,
+                                        groupValue: 2,
+                                        onChanged: (value) {
+                                          debugPrint("Changed selection");
+                                          setState((){
+                                          });
+                                        },
+                                      ),
+                                    );
+                                  }),
+                            ),
+                          ],
+                        );
+                        return ListTile(
+                          title: Text(pizzaList[index].crustItems[i].name),
+                        );
+                      }
+                  ),
+                  */
+                );
+              });
+        }
     );
   }
-  */
+
+  Future<void> viewCartDialog() async {
+    debugPrint("In viewCartDialog()");
+    await showModalBottomSheet(
+        context: context,
+        builder: (context) {
+          return StatefulBuilder(
+              builder: (context, setState) {
+                return Container(
+                  height: 600,
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(10),
+                        topRight: Radius.circular(10)),
+                  ),
+                );
+              }
+              );
+        }
+        );
+  }
+
 }
