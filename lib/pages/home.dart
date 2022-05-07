@@ -41,8 +41,13 @@ class _HomePageState extends State<HomePage> {
 
   bool _loading = true;
 
+  //Total price of all the pizzas
+  double price = 0.0;
+  //Total quantity of all the pizzas
+  int quantity = 0;
+
   int val=-1;
-  bool _value=false;
+
 
   //Function to get Pizza details for http GET request
   Future<void> getDetails() async {
@@ -93,12 +98,24 @@ class _HomePageState extends State<HomePage> {
         pizzaItem = PizzaDetails(name: name, description: description, isVeg: isVeg, defaultCrust: defaultCrust, crustItems: crustItemList);
         pizzaList.add(pizzaItem);
     }
+
+    _updatePriceQty();
+
     setState(() {
       _loading = false;
     });
 
 
     debugPrint(statusCode.toString());
+  }
+
+  void _updatePriceQty() {
+    price = 0.0;
+    quantity = 0;
+    for(var item in cartDetails) {
+      price += item[3] * item[4];
+      quantity += item[4] as int;
+    }
   }
 
   int getDefaultPrice(int index) {
@@ -172,8 +189,9 @@ class _HomePageState extends State<HomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("1 Item"),
-                  Text("500"),
+                  Text(quantity.toString() + " Item(s) "),
+                  Text(" Price: " + price.toString()),
+                  Spacer(),
                   ElevatedButton(
                       onPressed: () {
                         debugPrint("Pressed View Cart");
@@ -238,15 +256,6 @@ class _HomePageState extends State<HomePage> {
                             itemBuilder: (context, i) {
                               return ListTile(
                                 title: Text(pizzaList[index].crustItems[selectedCrustIndex].crustSizes[i]),
-                                /*Column(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(pizzaList[index].crustItems[selectedCrustIndex].crustSizes[i]),
-                                    Text(pizzaList[index].crustItems[selectedCrustIndex].crustCosts[i].toString()),
-                                  ],
-                                ),
-
-                                 */
                                 trailing: Radio(
                                   value: i,
                                   groupValue: selectedCrustSize,
@@ -279,6 +288,8 @@ class _HomePageState extends State<HomePage> {
                                 pizzaList[index].crustItems[selectedCrustIndex].crustCosts[selectedCrustSize],
                                 1]);
                             }
+                            _updatePriceQty();
+                            Navigator.pop(context);
                           },
                           child: const Text("Add to Cart"),
                       )
@@ -288,14 +299,13 @@ class _HomePageState extends State<HomePage> {
               });
         }
     );
+    setState(() {
+    });
   }
 
   Future<void> viewCartDialog() async {
     debugPrint("In viewCartDialog()");
-    double price = 0.0;
-    for(var item in cartDetails) {
-      price += item[3] * item[4];
-    }
+    _updatePriceQty();
     await showModalBottomSheet(
         context: context,
         builder: (context) {
@@ -337,10 +347,7 @@ class _HomePageState extends State<HomePage> {
                                       cartDetails[index][4]--;
                                     }
                                     setState (() {
-                                      price=0;
-                                      for(var item in cartDetails) {
-                                        price += item[3] * item[4];
-                                      }
+                                      _updatePriceQty();
                                     });
                                   }, icon: const Icon(Icons.remove)),
                                   Text(cartDetails[index][4].toString()),
@@ -348,10 +355,7 @@ class _HomePageState extends State<HomePage> {
                                     debugPrint("Added an Item");
                                     setState(() {
                                       cartDetails[index][4]++;
-                                      price=0;
-                                      for(var item in cartDetails) {
-                                        price += item[3] * item[4];
-                                      }
+                                      _updatePriceQty();
                                     });
                                   }, icon: const Icon(Icons.add),),
                                   Text((cartDetails[index][3] * cartDetails[index][4]).toString()),
@@ -359,6 +363,7 @@ class _HomePageState extends State<HomePage> {
                               );
                             }),
                       ),
+                      Text("Total Quantity: " + quantity.toString()),
                       Text("Total Price: " + price.toString()),
                     ],
                   ),
@@ -367,6 +372,8 @@ class _HomePageState extends State<HomePage> {
               );
         }
         );
+    setState(() {
+    });
   }
 
 }
