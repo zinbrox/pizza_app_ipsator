@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -33,12 +34,14 @@ class _HomePageState extends State<HomePage> {
   //List of the custom PizzaDetails objects
   List<PizzaDetails> pizzaList = [];
 
+  //List of lists of added items. index 0= pizza name, index 1= pizza crust type, index 2= pizza crust size, index 3= pizza crust cost, index 4= quantity
   List cartDetails = [];
 
   //Status Code for the http request
   late int statusCode;
   late String statusMessage;
 
+  //vble for loading widget until all details fetched
   bool _loading = true;
 
   //Total price of all the pizzas
@@ -99,6 +102,7 @@ class _HomePageState extends State<HomePage> {
         pizzaList.add(pizzaItem);
     }
 
+    //Calculate price of cart (will be empty here)
     _updatePriceQty();
 
     setState(() {
@@ -109,6 +113,7 @@ class _HomePageState extends State<HomePage> {
     debugPrint(statusCode.toString());
   }
 
+  //Function to calculate price and quantity of the cart
   void _updatePriceQty() {
     price = 0.0;
     quantity = 0;
@@ -118,6 +123,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  //Get default price of a given pizza
   int getDefaultPrice(int index) {
     int defaultCrust = pizzaList[index].defaultCrust;
     int defaultSize = pizzaList[index].crustItems[defaultCrust-1].defaultSize;
@@ -136,44 +142,65 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
         appBar: AppBar(
           title: const Text("Pizza Order"),
+          backgroundColor: Colors.deepOrangeAccent,
           centerTitle: true,
         ),
       body: Center(
         child: _loading? const CircularProgressIndicator() : Column(
           children: [
             Expanded(
-              child: Container(
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height*0.7,
                 child: ListView.builder(
                   itemCount: pizzaList.length,
                     itemBuilder: (context, index) {
                       return InkWell(
                         onTap: () {
                           debugPrint("Pressed on Pizza");
-
                         },
                         child: Card(
-                          elevation: 5,
+                          elevation: 10,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                          ),
                           child: Column(
                             children: [
+                              //Using a random pizza image
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: const Image(
+                                  image: NetworkImage('https://www.simplyrecipes.com/thmb/48O78GUQ-HBoDZS4m1ty3pUZ-tg=/720x0/filters:no_upscale():max_bytes(150000):strip_icc():format(webp)/__opt__aboutcom__coeus__resources__content_migration__simply_recipes__uploads__2019__09__easy-pepperoni-pizza-lead-3-8f256746d649404baa36a44d271329bc.jpg'
+                                  ),
+                                ),
+                              ),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(pizzaList[index].name),
+                                  const Spacer(),
+                                  Icon(Icons.circle, color: pizzaList[index].isVeg? Colors.green : Colors.red.shade900,),
                                   Text(pizzaList[index].isVeg? "Veg" : "Non-Veg"),
                                 ],
                               ),
+                              const SizedBox(height: 10,),
                               Text(pizzaList[index].description),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text("₹" + getDefaultPrice(index).toString()),
+                                  const Spacer(),
                                   ElevatedButton(
                                       onPressed: () async {
                                         debugPrint("Pressed Customise");
                                         showCustomDialog(index);
                                       },
+                                      style: ElevatedButton.styleFrom(primary: Colors.green,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(30.0),
+                                        ),
+                                      ),
                                       child: const Text("Customise"),
                                   ),
+                                  const SizedBox(width: 5,),
                                 ],
                               ),
                             ],
@@ -189,16 +216,23 @@ class _HomePageState extends State<HomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  const SizedBox(width: 10,),
                   Text(quantity.toString() + " Item(s) "),
                   Text(" Price: " + price.toString()),
-                  Spacer(),
+                  const Spacer(),
                   ElevatedButton(
                       onPressed: () {
                         debugPrint("Pressed View Cart");
                         viewCartDialog();
                       },
+                      style: ElevatedButton.styleFrom(primary: Colors.green,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30.0),
+                        ),
+                      ),
                       child: const Text("View Cart"),
                   ),
+                  const SizedBox(width: 10,),
                 ],
               ),
             ),
@@ -208,6 +242,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  //Function to show dialog to add custom pizzas
   void showCustomDialog(int index) async {
     debugPrint("In showCustomDialog");
     int defaultCrust = pizzaList[index].defaultCrust-1;
@@ -215,19 +250,23 @@ class _HomePageState extends State<HomePage> {
     int selectedCrustIndex = defaultCrust;
     int selectedCrustSize = pizzaList[index].crustItems[defaultCrust].defaultSize-1;
     await showModalBottomSheet(
+      isScrollControlled: true,
         context: context,
         builder: (context) {
           return StatefulBuilder(
               builder: (context, setState) {
                 return Container(
-                  height: 600,
+                  height: MediaQuery.of(context).size.height*0.7,
                   decoration: const BoxDecoration(
                     borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(10),
                         topRight: Radius.circular(10)),
                   ),
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      //Commented out part is for dropdown menu with available crusts instead of showing all crusts directly
+                      /*
                       DropdownButton(
                         value: selectedCrust,
                         items: pizzaList[index].crustItems
@@ -249,13 +288,43 @@ class _HomePageState extends State<HomePage> {
                           });
                         },
                       ),
+                      */
+                      //Show available crusts and change the crust sizes based on the chosen crust
                       SizedBox(
-                        height: 300,
+                        height: MediaQuery.of(context).size.height*0.3,
+                        child: IntrinsicHeight(
+                          child: ListView.builder(
+                              itemCount: pizzaList[index].crustItems.length,
+                              itemBuilder: (context, i) {
+                                return ListTile(
+                                  title: Text(pizzaList[index].crustItems[i].name),
+                                  trailing: Radio(
+                                    value: i,
+                                    groupValue: defaultCrust,
+                                    onChanged: (value) {
+                                      debugPrint("Selected crust type");
+                                      setState(() {
+                                        defaultCrust = value as int;
+                                        selectedCrustIndex = pizzaList[index].crustItems[defaultCrust].id - 1;
+                                        selectedCrustSize = pizzaList[index].crustItems[defaultCrust].defaultSize - 1;
+                                      });
+                                    },
+                                  ),
+                                );
+                              }
+                          ),
+                        ),
+                      ),
+
+                      //Show available crust sizes and price based on the crust type
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height*0.3,
                         child: ListView.builder(
                           itemCount: pizzaList[index].crustItems[selectedCrustIndex].crustSizes.length,
                             itemBuilder: (context, i) {
                               return ListTile(
                                 title: Text(pizzaList[index].crustItems[selectedCrustIndex].crustSizes[i]),
+                                subtitle: Text("₹" + pizzaList[index].crustItems[selectedCrustIndex].crustCosts[i].toString()),
                                 trailing: Radio(
                                   value: i,
                                   groupValue: selectedCrustSize,
@@ -270,6 +339,8 @@ class _HomePageState extends State<HomePage> {
                             }
                         ),
                       ),
+
+                      //Button to add the chosen crust type and size to the cart
                       ElevatedButton(
                           onPressed: () {
                             debugPrint("Pressed Add to Cart");
@@ -291,6 +362,11 @@ class _HomePageState extends State<HomePage> {
                             _updatePriceQty();
                             Navigator.pop(context);
                           },
+                          style: ElevatedButton.styleFrom(primary: Colors.green,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30.0),
+                            ),
+                          ),
                           child: const Text("Add to Cart"),
                       )
                     ],
@@ -307,12 +383,13 @@ class _HomePageState extends State<HomePage> {
     debugPrint("In viewCartDialog()");
     _updatePriceQty();
     await showModalBottomSheet(
+        isScrollControlled: true,
         context: context,
         builder: (context) {
           return StatefulBuilder(
               builder: (context, setState) {
                 return Container(
-                  height: 600,
+                  height: MediaQuery.of(context).size.height*0.6,
                   decoration: const BoxDecoration(
                     borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(10),
@@ -320,25 +397,27 @@ class _HomePageState extends State<HomePage> {
                   ),
                   child: Column(
                     children: [
-                      SizedBox(
-                        height: 300,
+                      cartDetails.isEmpty? const Text("Your cart is empty!") : SizedBox(
+                        height: MediaQuery.of(context).size.height*0.4,
                         child: ListView.builder(
                           itemCount: cartDetails.length,
                             itemBuilder: (context, index) {
                               return Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Expanded(
-                                    child: Column(
-                                      children: [
-                                        Text(cartDetails[index][0]),
-                                        Text(cartDetails[index][1]),
-                                        Text(cartDetails[index][2]),
-                                      ],
-                                    ),
+                                  Column(
+                                    children: [
+                                      Text(cartDetails[index][0]),
+                                      Text(cartDetails[index][1]),
+                                      Text(cartDetails[index][2]),
+                                    ],
                                   ),
                                   const Spacer(),
-                                  IconButton(onPressed: () {
+                                  RawMaterialButton(
+                                      fillColor: Colors.white,
+                                      elevation: 2.0,
+                                      shape: CircleBorder(),
+                                      onPressed: () {
                                     debugPrint("Removed a Item");
                                     if(cartDetails[index][4] == 1) {
                                       cartDetails.removeAt(index);
@@ -349,22 +428,39 @@ class _HomePageState extends State<HomePage> {
                                     setState (() {
                                       _updatePriceQty();
                                     });
-                                  }, icon: const Icon(Icons.remove)),
+                                  }, child: const Icon(Icons.remove)),
                                   Text(cartDetails[index][4].toString()),
-                                  IconButton(onPressed: () {
+                                  RawMaterialButton(
+                                    fillColor: Colors.white,
+                                    elevation: 2.0,
+                                    shape: CircleBorder(),
+                                    onPressed: () {
                                     debugPrint("Added an Item");
                                     setState(() {
                                       cartDetails[index][4]++;
                                       _updatePriceQty();
                                     });
-                                  }, icon: const Icon(Icons.add),),
+                                  }, child: const Icon(Icons.add),),
                                   Text((cartDetails[index][3] * cartDetails[index][4]).toString()),
+                                  const SizedBox(width: 10,),
                                 ],
                               );
                             }),
                       ),
+                      const Spacer(),
                       Text("Total Quantity: " + quantity.toString()),
-                      Text("Total Price: " + price.toString()),
+                      Text("Total Price: ₹" + price.toString()),
+                      ElevatedButton(
+                          onPressed: () {
+                            debugPrint("Order Placed");
+                          },
+                          style: ElevatedButton.styleFrom(primary: Colors.deepOrangeAccent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30.0),
+                            ),
+                          ),
+                          child: const Text("Place Order")
+                      ),
                     ],
                   ),
                 );

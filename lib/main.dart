@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:pizza_app_ipsator/pages/home.dart';
 
 void main() {
@@ -14,6 +15,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Pizza Ordering App',
       debugShowCheckedModeBanner: true,
+      theme: ThemeData(
+        textTheme: GoogleFonts.rubikTextTheme(
+          Theme.of(context).textTheme,
+        ),
+      ),
       initialRoute: '/homePage',
       routes: {
         '/homePage':(context) => HomePage(),
