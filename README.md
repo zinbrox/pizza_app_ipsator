@@ -3,4 +3,5 @@
 ## Pizza App Task for IPSator  
 
 ## Sample working:  
-<img src = "https://user-images.githubusercontent.com/53508807/167923998-3854762a-5f2b-4dcb-87f2-d1bf25a5db9d.gif" width="1200">  
+<img src = "https://user-images.githubusercontent.com/53508807/167925354-53b6b00a-28a5-44f4-ae50-01e946f8555c.gif" width="1200">  
+
