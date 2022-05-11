@@ -1,0 +1,4 @@
+io/flutter/plugins/GeneratedPluginRegistrant.java
+ io.flutter.plugins.GeneratedPluginRegistrant
+com/zinbrox/pizza_app_ipsator/BuildConfig.java
+ com.zinbrox.pizza_app_ipsator.BuildConfig
